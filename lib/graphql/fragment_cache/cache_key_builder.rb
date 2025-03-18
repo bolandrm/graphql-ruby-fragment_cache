@@ -100,6 +100,10 @@ module GraphQL
       end
 
       def selections_cache_key
+        if @options[:lookahead]
+          return @options[:lookahead].selections.to_selections_key
+        end
+
         current_root =
           path.reduce(query.lookahead) { |lkhd, field_name|
             # Handle cached fields inside collections:

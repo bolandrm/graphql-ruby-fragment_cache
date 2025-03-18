@@ -418,6 +418,47 @@ describe "#cache_fragment" do
         })
       end
     end
+
+    context "when a lookahead is passed explicitly" do
+      i = 0
+
+      before do
+        i = 0
+        allow(GraphQL::FragmentCache.cache_store).to receive(:read).and_call_original
+      end
+
+      let(:resolver) do
+        ->(id:, lookahead:, expires_in:) do
+          i+=1
+          cache_opts = i == 2 ? {lookahead:} : {}
+          cache_fragment(**cache_opts) { Post.find(id) }
+        end
+      end
+
+      let(:schema) do
+        field_resolver = resolver
+
+        build_schema do
+          query(
+            Class.new(Types::Query) {
+              field :post, Types::Post, null: true, extras: [:lookahead] do
+                argument :id, GraphQL::Types::ID, required: true
+                argument :expires_in, GraphQL::Types::Int, required: false
+              end
+
+              define_method(:post, &field_resolver)
+            }
+          )
+        end
+      end
+
+      it "uses the passed lookahead and gets the same cache key result" do
+        result = execute_query
+        result = execute_query
+        expect(GraphQL::FragmentCache.cache_store).to have_received(:read).with("graphql/post/3b084021dc79ff9f0dd4636f51adb0f5457f8b66").twice
+        expect(i == 2).to eq true
+      end
+    end
   end
 
   describe "connection caching" do
