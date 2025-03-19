@@ -54,7 +54,7 @@ module GraphQL
         @context = context
         @keep_in_context = options.delete(:keep_in_context)
         @options = options
-        @path = interpreter_context[:current_path]
+        @path = options[:path] || interpreter_context[:current_path]
       end
 
       def read
